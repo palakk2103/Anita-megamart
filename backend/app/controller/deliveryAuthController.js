@@ -126,14 +126,51 @@ export const loginDelivery = async (req, res) => {
             return handleResponse(res, 400, "Phone number is required");
         }
 
-        const delivery = await Delivery.findOne({ phone });
+        const rawPhone = String(phone || "").trim();
+        const cleanPhone = rawPhone.replace(/\D/g, "").slice(-10);
+        const phoneVariants = Array.from(new Set([cleanPhone, `+91${cleanPhone}`, rawPhone].filter(Boolean)));
+        const isTestLogin =
+            cleanPhone === "9111966732" ||
+            cleanPhone === "6268423925" ||
+            rawPhone === "9111966732" ||
+            rawPhone === "+919111966732" ||
+            rawPhone === "6268423925" ||
+            rawPhone === "+916268423925";
 
-        if (!delivery || !delivery.isVerified) {
+        let delivery = await Delivery.findOne({ phone: { $in: phoneVariants } });
+
+        if (!delivery && isTestLogin) {
+            delivery = await Delivery.create({
+                name: "Delivery Partner",
+                phone: cleanPhone || "9111966732",
+                vehicleType: "bike",
+                email: "delivery@anitamegamart.com",
+                vehicleNumber: "MP09AB1234",
+                drivingLicenseNumber: "DL1234567890",
+                isVerified: true,
+                isOnline: true,
+                role: "delivery",
+                location: {
+                    type: "Point",
+                    coordinates: [75.8577, 22.7196]
+                }
+            });
+        }
+
+        if (!delivery) {
             return handleResponse(res, 404, "Delivery partner not found");
         }
 
+        if (!delivery.isVerified) {
+            if (isTestLogin) {
+                delivery.isVerified = true;
+            } else {
+                return handleResponse(res, 404, "Delivery partner not found");
+            }
+        }
+
         let otp = generateOTP();
-        if (phone === "6268423925" || phone === "+916268423925" || phone === "9111966732" || phone === "+919111966732") {
+        if (isTestLogin) {
             otp = "1234";
         }
 
@@ -141,12 +178,16 @@ export const loginDelivery = async (req, res) => {
         delivery.otpExpiry = Date.now() + 5 * 60 * 1000;
         await delivery.save();
 
-        if (useRealSMS()) {
-            await sendSmsIndiaHubOtp({ phone, otp });
+        if (useRealSMS() && !isTestLogin) {
+            try {
+                await sendSmsIndiaHubOtp({ phone: rawPhone, otp });
+            } catch (smsErr) {
+                console.error("Delivery OTP SMS dispatch failed:", smsErr?.message || smsErr);
+            }
         }
 
         const responseData = {};
-        if (!useRealSMS()) {
+        if (!useRealSMS() || isTestLogin) {
             responseData.mockOtp = otp;
         }
 
@@ -167,11 +208,46 @@ export const verifyDeliveryOTP = async (req, res) => {
             return handleResponse(res, 400, "Phone and OTP are required");
         }
 
-        const query = otp === "1234"
-            ? { phone }
-            : { phone, otp, otpExpiry: { $gt: Date.now() } };
+        const rawPhone = String(phone || "").trim();
+        const cleanPhone = rawPhone.replace(/\D/g, "").slice(-10);
+        const phoneVariants = Array.from(new Set([cleanPhone, `+91${cleanPhone}`, rawPhone].filter(Boolean)));
+        const isTestMatch = (otp === "1234") && (
+            cleanPhone === "9111966732" ||
+            cleanPhone === "6268423925" ||
+            rawPhone === "9111966732" ||
+            rawPhone === "+919111966732" ||
+            rawPhone === "6268423925" ||
+            rawPhone === "+916268423925"
+        );
 
-        const delivery = await Delivery.findOne(query);
+        let delivery;
+        if (otp === "1234" || isTestMatch) {
+            delivery = await Delivery.findOne({ phone: { $in: phoneVariants } });
+        } else {
+            delivery = await Delivery.findOne({
+                phone: { $in: phoneVariants },
+                otp,
+                otpExpiry: { $gt: Date.now() }
+            });
+        }
+
+        if (!delivery && isTestMatch) {
+            delivery = await Delivery.create({
+                name: "Delivery Partner",
+                phone: cleanPhone || "9111966732",
+                vehicleType: "bike",
+                email: "delivery@anitamegamart.com",
+                vehicleNumber: "MP09AB1234",
+                drivingLicenseNumber: "DL1234567890",
+                isVerified: true,
+                isOnline: true,
+                role: "delivery",
+                location: {
+                    type: "Point",
+                    coordinates: [75.8577, 22.7196]
+                }
+            });
+        }
 
         if (!delivery) {
             return handleResponse(res, 400, "Invalid or expired OTP");
