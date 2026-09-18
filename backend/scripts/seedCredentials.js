@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import Admin from '../app/models/admin.js';
 import Seller from '../app/models/seller.js';
+import Delivery from '../app/models/delivery.js';
 
 dotenv.config();
 
@@ -12,6 +13,10 @@ const admins = [
 
 const sellers = [
     { name: 'Harsh', email: 'harsh@appzeto.com', password: 'Admin!@#123', shopName: 'Appzeto Store' }
+];
+
+const deliveries = [
+    { name: 'Delivery Partner', phone: '9111966732', vehicleType: 'bike', vehicleNumber: 'MP09AB1234', drivingLicenseNumber: 'DL1234567890' }
 ];
 
 async function seed() {
@@ -51,6 +56,30 @@ async function seed() {
                     phone: '9999999999' 
                 });
                 console.log(`Created Seller: ${sellerData.email}`);
+            }
+        }
+
+        for (const deliveryData of deliveries) {
+            let delivery = await Delivery.findOne({ phone: deliveryData.phone });
+            if (delivery) {
+                delivery.isVerified = true;
+                delivery.isOnline = true;
+                delivery.role = 'delivery';
+                await delivery.save();
+                console.log(`Updated Delivery Partner: ${deliveryData.phone}`);
+            } else {
+                await Delivery.create({
+                    ...deliveryData,
+                    email: 'delivery@anitamegamart.com',
+                    role: 'delivery',
+                    isVerified: true,
+                    isOnline: true,
+                    location: {
+                        type: 'Point',
+                        coordinates: [75.8577, 22.7196]
+                    }
+                });
+                console.log(`Created Delivery Partner: ${deliveryData.phone}`);
             }
         }
 
