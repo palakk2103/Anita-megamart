@@ -44,7 +44,7 @@ const DeliveryAuth = () => {
   const [step, setStep] = useState("form"); // "form" | "otp"
 
   // Login state
-  const [loginPhone, setLoginPhone] = useState("9111966732");
+  const [loginPhone, setLoginPhone] = useState("");
 
   // Signup state
   const [signupStep, setSignupStep] = useState(1);
@@ -176,11 +176,7 @@ const DeliveryAuth = () => {
           toast.info(`Mock OTP: ${res.data.result.mockOtp}`, { duration: 10000 });
         }
       }
-      if (mode === "login" && (loginPhone === "9111966732" || loginPhone === "6268423925" || res.data?.result?.mockOtp === "1234")) {
-        setOtp(["1", "2", "3", "4"]);
-      } else {
-        setOtp(["", "", "", ""]);
-      }
+      setOtp(["", "", "", ""]);
       setTimer(30);
       setStep("otp");
     } catch (error) {
@@ -239,7 +235,7 @@ const DeliveryAuth = () => {
     setMode(newMode);
     setStep("form");
     setOtp(["", "", "", ""]);
-    setLoginPhone(newMode === "login" ? "9111966732" : "");
+    setLoginPhone("");
     setSignupStep(1);
     setSignupName("");
     setSignupPhone("");
@@ -878,18 +874,9 @@ const DeliveryAuth = () => {
                     <div className="space-y-4">
                       {/* Phone */}
                       <div className="space-y-1.5">
-                        <div className="flex items-center justify-between ml-1">
-                          <label className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                            Phone Number
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => setLoginPhone("9111966732")}
-                            className="text-[10px] font-bold text-brand-600 hover:underline cursor-pointer"
-                          >
-                            Use Demo: 9111966732
-                          </button>
-                        </div>
+                        <label className="block ml-1 text-xs font-black text-gray-400 uppercase tracking-widest">
+                          Phone Number
+                        </label>
                         <div className="relative">
                           <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 w-4 h-4" />
                           <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-sm border-r border-gray-200 pr-2.5">
@@ -904,12 +891,8 @@ const DeliveryAuth = () => {
                             }}
                             maxLength={10}
                             className="w-full pl-24 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400 transition-all placeholder:text-gray-300"
-                            placeholder="9111966732"
+                            placeholder="Enter 10-digit number"
                           />
-                        </div>
-                        <div className="text-[11px] text-gray-500 font-medium px-1 flex items-center justify-between">
-                          <span>Demo Phone: <strong className="text-gray-800">9111966732</strong></span>
-                          <span>OTP: <strong className="text-gray-800">1234</strong></span>
                         </div>
                       </div>
 
